@@ -2,6 +2,7 @@ from django.shortcuts import render,redirect
 from django.views import View
 from . models import *
 from django.db.models import Q
+from django.http import JsonResponse
 
 
 class ProductView(View):
@@ -65,7 +66,83 @@ def showcart(request):
     return render(request , "app/emptycart.html")
      
 
+def plus_cart(request):
+  if request.method == "GET":
+   prod_id = request.GET["prod_id"]
+   c = Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
+   c.quantity += 1
+   c.save()
+   amount = 0.0
+   shipping_amount = 70.0
+   cart_product =[p for p in Cart.objects.all() if p.user == request.user]
+   for p in cart_product:
+    tempamount = p.quantity * p.product.discounted_price
+    amount += tempamount
 
+    data = {
+     "quantity":c.quantity,
+     "amount" :amount,
+     "totalamount": amount + shipping_amount,
+    }
+    return JsonResponse(data)
+   
+def minus_cart(request):
+  if request.method == "GET":
+   prod_id = request.GET["prod_id"]
+   c = Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
+   c.quantity -= 1
+   c.save()
+   amount = 0.0
+   shipping_amount = 70.0
+   cart_product =[p for p in Cart.objects.all() if p.user == request.user]
+   for p in cart_product:
+    tempamount = p.quantity * p.product.discounted_price
+    amount += tempamount
+
+    data = {
+     "quantity":c.quantity,
+     "amount" :amount,
+     "totalamount": amount + shipping_amount,
+    }
+    return JsonResponse(data)
+
+def remove_cart(request):
+  if request.method == "GET":
+   prod_id = request.GET["prod_id"]
+   c = Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
+   c.delete()
+   amount = 0.0
+   shipping_amount = 70.0
+   cart_product =[p for p in Cart.objects.all() if p.user == request.user]
+   for p in cart_product:
+    tempamount = p.quantity * p.product.discounted_price
+    amount += tempamount
+
+    data = {
+     "amount" :amount,
+     "totalamount": amount + shipping_amount,
+    }
+    return JsonResponse(data)       
+
+
+def mobile(request,data=None):
+ if data == None:
+  mobiles = Product.objects.filter(category="M")
+ elif data == "Redmi" or data == "Samsung":
+  mobiles = Product.objects.filter(category="M").filter(brand=data)
+ elif data == "below":
+  mobiles = Product.objects.filter(category ="M").filter(discounted_price__gt=10000)
+ return render(request,"app/mobile.html",{"mobiles":mobiles})
+    
+
+def laptop(request,data=None):
+ if data == None:
+  laptops = Product.objects.filter(category="L")
+ elif data == "HP" or data == "Lenovo":
+  laptops = Product.objects.filter(category="l").filter(brand=data)
+ elif data == "below":
+  laptops = Product.objects.filter(category ="l").filter(discounted_price__gt=10000)
+ return render(request,"app/laptop.html",{"laptops":laptops})        
 
  
 
@@ -88,8 +165,10 @@ def orders(request):
 def change_password(request):
  return render(request, 'app/changepassword.html')
 
-def mobile(request):
- return render(request, 'app/mobile.html')
+# def mobile(request):
+#  return render(request, 'app/mobile.html')
+
+
 
 def login(request):
  return render(request, 'app/login.html')
